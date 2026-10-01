@@ -68,7 +68,7 @@ Start the session on this repository and send:
 
 ```
 You are building TELL, a party game on top of the Mien expression engine in this
-repository. Read CLAUDE.md, then docs/tell/SPEC.md completely, then the files listed in
+docs/tell/HANDOFF.md §3, before writing code.
 read the files listed in HANDOFF.md §3 before writing code.
 
 Scope for this session: milestones M0, M1, M2 and M3 from SPEC.md §9, in that order.
