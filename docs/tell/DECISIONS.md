@@ -43,3 +43,53 @@ The "Decisions already made" in [SPEC.md](SPEC.md) §9 were not reopened.
   (iOS Safari, Android Chrome), otherwise as a download. File name
   `tell-YYYY-MM-DD-HHMM.json`; the current calibration and range gains are embedded so
   the replay reproduces the engine state.
+
+## M1 — round
+
+- **Baseline is 12 s** with the ring; "Done talking" appears after 8 s so a fast talker
+  is not stuck. Statements are tap-to-stop with a 1.5 s minimum and the spec's 15 s
+  maximum; a face lost for more than 1.5 s pauses the ring and extends the deadline.
+- **Calibration always takes 3 s**, also under `?fast=1`: the 1.5 s variant starved the
+  engine of frames on the software renderer used by the end-to-end test and failed.
+- **Camera-free first step.** The privacy screen is shown once (stored acknowledgement)
+  before the first camera use, from either entry (round or Poker Face).
+- **The hot seat sees a plain white mesh** over their face while recording, so they know
+  tracking works, but no colours and no numbers (SPEC §5 interaction rules).
+- **Replays are drawn in selfie orientation** (mirrored like the recording screen), so
+  "left" in a caption is the subject's left and appears on the viewer's left.
+- **Votes**: with one or two detectives the vote is per person (names cycle, picks hidden
+  until all are in); with three or more the default is one room pick, and a text button
+  toggles between the two.
+- **Reveal wording**: "The meter and the room agreed: #2." when both match; otherwise the
+  meter line, "The false one was #N." and a room line ("got it", "went for #k",
+  "was split" on a tie). Unscored statements show the reason instead of a meter and have
+  no replay; the tabs under the reveal let the room look at all three replays.
+- **PNG strip**: six mesh frames from the peak window, caption, "tell N/100 · movement
+  vs their own baseline, not a verdict". Share sheet on phones, download elsewhere.
+- **Mesh tracks** (478 points per frame) are kept in memory for the current hot seat
+  only and cleared when the next player starts.
+
+## M2 — Poker Face
+
+- **A live needle is shown in solo mode** (excess over the first 5 s, same formula as
+  the score); the no-live-meter rule is for the hot-seat player in party mode.
+- **Provocations**: a seeded list per day (lines, emoji bursts with a synthesised
+  WebAudio blip, mesh faces). The mesh face is a procedural line-art face posed from
+  the expression's prototype slots in `emotion-model.json`, so no licensed imagery.
+- **Replays of the daily are allowed**; the day's stored result is the best score and
+  the streak counts the first completion of each day. No streak freeze (SPEC §6).
+- **`?fast=1`** compresses the daily to 3 s with a 1 s baseline and 0.3 s bins; the
+  share card still has ten cells.
+
+## M3 — honesty
+
+- **Copy audit by allowlist.** `tests/tell-copy.test.ts` scans every TELL source file and
+  `tell.html` for verdict words and emotion labels after removing an explicit list of
+  allowed sentences (home line, terms, the Science citations). Adding a sentence to the
+  list is the review step; adding a word is not possible.
+- **The Science screen cites** Bond & DePaulo 2006, Leal & Vrij 2008, Perelman 2014,
+  ten Brinke & Porter 2012, Ekman, Hager & Friesen 1981, Porter & ten Brinke 2008,
+  DePaulo et al. 2003, Vrij, Hartwig & Granhag 2019 and Jordan et al. 2019, from
+  `docs/tell/RESEARCH-NOTES.md`; no external fetches were possible or needed.
+- **Hosting**: not decided here (HANDOFF §1 says it is yours). The existing deploy job
+  already checks whether Pages is enabled and skips cleanly otherwise, so CI stays green.

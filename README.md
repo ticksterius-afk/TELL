@@ -91,7 +91,12 @@ npm run dev:https        # https://<your-LAN-IP>:5173 for testing on a phone (ac
 npm run check            # model format, iOS model copy, typecheck, unit + golden tests
 npm run build            # production build in web/dist (downloads the MediaPipe model once)
 npm run e2e              # Playwright end-to-end tests (see web/tests/e2e/README.md)
+npm run golden:tell      # regenerate TELL's scorer golden file from model/fixtures/tell/*.json
+npm run fixture:tell     # regenerate the synthetic TELL fixture
 ```
+
+TELL, the party game, is a second page of the web app: `npm run dev` then open
+`/tell.html`. See [docs/tell/STATUS.md](docs/tell/STATUS.md).
 
 Swift engine tests (macOS or Linux): `cd ios/EmotionEngine && swift test`.
 

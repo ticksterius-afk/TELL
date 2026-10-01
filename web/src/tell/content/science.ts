@@ -1,7 +1,7 @@
 /**
  * The Science screen: one card per scored component with its citation and a
  * plain sentence on the effect, what is not scored and why, and the terms.
- * This is the one place TELL may name emotions and lie-detection research;
+ * This is the one place TELL may name emotions and cite the cue research;
  * the copy audit (tests/tell-copy.test.ts) allowlists these sentences.
  */
 export const SCIENCE = {

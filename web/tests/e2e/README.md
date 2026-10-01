@@ -13,3 +13,8 @@ Convert any face video to Y4M (uncompressed, 4:2:0) for Chromium, e.g.:
 ```sh
 ffmpeg -i clip.mp4 -pix_fmt yuv420p clip.y4m
 ```
+
+`tests/e2e/tell.spec.ts` covers the TELL party game (`/tell.html?fast=1`). The camera-free
+screens run without a clip; the full round and the Poker Face daily need `FAKE_VIDEO`,
+because the quality gate (face size, light, pose) rightly refuses to record Chromium's
+test pattern.
