@@ -159,7 +159,7 @@ frames:[{t, m, cmd?}]}`) of raw measurements for the current camera session, wit
 `cmd` markers the user inserts by tapping ("baseline", "statement:1", "lie:2", …).
 Numbers only, no pixels. These files become `model/fixtures/tell/*.json` and drive
 the scorer's golden tests and tuning. The build session cannot use a camera, so this
-is how the human feeds it real faces (see Part 2, §5).
+is how the human feeds it real faces (see HANDOFF.md §5).
 
 ## 5. Screens and flow (v1)
 
@@ -253,7 +253,7 @@ Automated (must pass in CI, `npm run check` + `npm run e2e`):
   with 10 cells; no page errors.
 - Typecheck, model format check, existing golden tests unchanged.
 
-Manual acceptance (by you, with a phone; see Part 2 §5):
+Manual acceptance (by you, with a phone; see HANDOFF.md §5):
 - A real round with 3 people takes under 6 minutes including calibration.
 - The meter visibly differs between a deliberately held stare and normal talking.
 - Nobody in the test group reads the UI as claiming to detect lies.
