@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "fetch-model": "node scripts/fetch-model.mjs",
     "golden": "node --experimental-strip-types --no-warnings scripts/make-golden.ts",
+    "golden:tell": "node --experimental-strip-types --no-warnings scripts/make-golden-tell.ts",
+    "fixture:tell": "node --experimental-strip-types --no-warnings scripts/make-tell-fixture.ts",
     "e2e": "playwright test",
     "sync:ios": "node scripts/sync-ios.mjs",
     "icons": "node scripts/make-icons.mjs",

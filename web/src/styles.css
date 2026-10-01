@@ -206,3 +206,20 @@ dialog menu { display: flex; justify-content: flex-end; margin: 12px 0 0; paddin
   padding: 10px 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px;
   box-shadow: 0 8px 30px rgba(0,0,0,.4);
 }
+
+/* ---------- developer recorder ---------- */
+.devbar {
+  position: absolute; left: calc(var(--safe-l) + 10px); right: calc(var(--safe-r) + 10px); top: calc(var(--safe-t) + 64px);
+  display: grid; gap: 6px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(20,24,33,.78); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 12.5px;
+}
+.devbar-status { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.rec-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); animation: rec-blink 1.2s infinite; }
+@keyframes rec-blink { 50% { opacity: .25; } }
+.devbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.devbar .chip { min-height: 30px; padding: 4px 9px; }
+.devbar .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-2); }
+.devbar .chip.save { background: var(--accent); color: #0b0d12; border-color: transparent; font-weight: 700; }
+dialog#settings details.field summary { cursor: pointer; color: var(--text-2); }
+dialog#settings code { font-family: var(--mono); font-size: 12px; }

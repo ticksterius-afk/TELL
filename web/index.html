@@ -48,6 +48,24 @@
           <div id="complex" class="chips" aria-label="Complex states"></div>
         </div>
         <div id="noface" class="noface" hidden>No face in view</div>
+
+        <div id="devbar" class="devbar" hidden>
+          <div class="devbar-status"><span class="rec-dot" aria-hidden="true"></span><span id="dev-status">Recording measurements</span></div>
+          <div class="devbar-row">
+            <button id="dev-baseline" type="button" class="chip">Baseline</button>
+            <button id="dev-statement" type="button" class="chip">Statement 1</button>
+            <button id="dev-feed" type="button" class="chip">Feed</button>
+            <button id="dev-end" type="button" class="chip">End</button>
+          </div>
+          <div class="devbar-row">
+            <span class="fine">False one:</span>
+            <button id="dev-false-1" type="button" class="chip" data-n="1">#1</button>
+            <button id="dev-false-2" type="button" class="chip" data-n="2">#2</button>
+            <button id="dev-false-3" type="button" class="chip" data-n="3">#3</button>
+            <button id="dev-save" type="button" class="chip save">Save</button>
+            <button id="dev-discard" type="button" class="chip">Discard</button>
+          </div>
+        </div>
       </section>
 
       <section id="panel" aria-label="Details">
@@ -75,6 +93,7 @@
           <input id="file-input" type="file" accept="video/*" hidden />
         </div>
         <p class="fine">Everything runs on this device. No images or data leave it.</p>
+        <p class="fine"><a id="link-tell" href="./tell.html">Play TELL</a> — the poker-face party game built on this engine.</p>
         <p class="fine">Faces show <em>expressions</em>, not guaranteed feelings — the same movement can mean different things in different contexts and cultures. Treat the labels as descriptions of what the face is doing.</p>
         <p id="start-error" class="error" hidden></p>
       </div>
@@ -132,6 +151,11 @@
           <button id="btn-range" type="button" class="secondary-btn">Calibrate expression range</button>
           <button id="btn-forget" type="button" class="text-btn">Forget calibration</button>
         </div>
+        <details class="field">
+          <summary>Developer</summary>
+          <p class="fine">Records the raw measurements of this camera session (numbers only, never images) as a <code>sequences.json</code>-style file with markers you tap: baseline, statements, feed, which statement was false. The files become TELL's scorer fixtures.</p>
+          <button id="btn-dev-record" type="button" class="secondary-btn">Record measurements</button>
+        </details>
         <p class="fine">Mien uses MediaPipe Face Landmarker for tracking and a FACS-based model (Ekman &amp; Friesen; Du, Tao &amp; Martinez; Keltner; Tracy &amp; Robins; Prkachin &amp; Solomon) to name expressions. See the repository's docs/RESEARCH.md for the science and its limits.</p>
         <menu><button value="close" class="primary-btn">Done</button></menu>
       </form>

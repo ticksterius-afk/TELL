@@ -1,5 +1,6 @@
 import "./styles.css";
 import { CameraError, openCamera, openFile, type Facing } from "./app/camera.ts";
+import { defaultRecordingName, DevRecorder, saveRecording } from "./app/devrecorder.ts";
 import { MODEL } from "./app/model.ts";
 import { Overlay } from "./app/overlay.ts";
 import { DEFAULT_SETTINGS, load, loadRaw, remove, save, type Settings } from "./app/storage.ts";
@@ -85,6 +86,7 @@ function frame(): void {
     lastVideoTime = video.currentTime;
     const t = performance.now();
     const face = tracker.detect(video, t);
+    if (devRecorder) devRecorder.push(t, face?.measurements ?? null);
     const out = engine.process(t, face?.measurements ?? null);
     lastOut = out;
     lastLandmarks = face?.landmarks ?? null;
@@ -294,6 +296,65 @@ delegate.addEventListener("change", async () => {
   tracker = await Tracker.create(settings.delegate);
   setStatus();
 });
+
+// ------------------------------------------------------------------ developer recorder
+// Writes raw measurements (numbers only) with tapped markers; see src/app/devrecorder.ts.
+let devRecorder: DevRecorder | null = null;
+const devbar = $("#devbar");
+const devMarked = (cmd: string) => { devRecorder?.mark(cmd); updateDevStatus(); };
+
+$("#btn-dev-record").addEventListener("click", () => {
+  dialog.close();
+  if (!running) { toast("Start the camera first."); return; }
+  devRecorder = new DevRecorder();
+  devRecorder.calibration = engine.baseline.getCalibration() ?? undefined;
+  devRecorder.gains = engine.baseline.getGains();
+  for (const n of [1, 2, 3]) $(`#dev-false-${n}`).setAttribute("aria-pressed", "false");
+  $("#dev-statement").textContent = "Statement 1";
+  devbar.hidden = false;
+  updateDevStatus();
+});
+$("#dev-baseline").addEventListener("click", () => devMarked("baseline"));
+$("#dev-statement").addEventListener("click", () => {
+  if (!devRecorder) return;
+  devRecorder.nextStatement();
+  $("#dev-statement").textContent = `Statement ${devRecorder.statementCount + 1}`;
+  updateDevStatus();
+});
+$("#dev-feed").addEventListener("click", () => devMarked("feed"));
+$("#dev-end").addEventListener("click", () => devMarked("end"));
+for (const n of [1, 2, 3]) {
+  $(`#dev-false-${n}`).addEventListener("click", () => {
+    for (const k of [1, 2, 3]) $(`#dev-false-${k}`).setAttribute("aria-pressed", String(k === n));
+    devMarked(`false:${n}`);
+  });
+}
+$("#dev-save").addEventListener("click", async () => {
+  if (!devRecorder) return;
+  const rec = devRecorder;
+  rec.mark("end");
+  const name = window.prompt("File name", defaultRecordingName(rec.startedAt)) ?? defaultRecordingName(rec.startedAt);
+  try {
+    const how = await saveRecording(rec.toJSON(name.replace(/\.json$/i, "")));
+    toast(how === "shared" ? "Recording handed to the share sheet." : `Downloaded ${name}.json`);
+    devRecorder = null;
+    devbar.hidden = true;
+  } catch {
+    toast("Not saved — still recording.");
+  }
+});
+$("#dev-discard").addEventListener("click", () => {
+  devRecorder = null;
+  devbar.hidden = true;
+  toast("Recording discarded.");
+});
+
+function updateDevStatus(): void {
+  if (!devRecorder) return;
+  const r = devRecorder;
+  $("#dev-status").textContent = `${r.seconds.toFixed(0)} s · ${r.frameCount} frames${r.lastMarker ? ` · ${r.lastMarker}` : ""}`;
+}
+window.setInterval(() => { if (devRecorder && !devbar.hidden) updateDevStatus(); }, 1000);
 
 // ------------------------------------------------------------------ misc
 let toastTimer = 0;

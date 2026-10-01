@@ -10,6 +10,10 @@ const TEXTURE_MAX_WIDTH = 200;
 export interface TrackedFace {
   landmarks: Landmark[];
   measurements: Record<string, number>;
+  /** Face bounding-box height as a fraction of the frame height (for the tracking-quality estimate). */
+  boxHeight: number;
+  /** Mean luminance (0–255) of the forehead crop read for the texture measurements; undefined when pixels are unavailable. */
+  luminance?: number;
 }
 
 /** MediaPipe Face Landmarker wrapper producing engine measurements. */
@@ -21,6 +25,7 @@ export class Tracker {
   private texGray = new Float32Array(0);
   /** Turned off if the browser refuses to read the camera's pixels. */
   private textureOk = true;
+  private lastLuminance: number | undefined;
 
   private constructor(landmarker: FaceLandmarker, delegate: "GPU" | "CPU") {
     this.landmarker = landmarker;
@@ -63,6 +68,7 @@ export class Tracker {
     }
     const frame = new FaceFrame(landmarks, video.videoWidth, video.videoHeight);
     Object.assign(measurements, measureGeometry(frame));
+    this.lastLuminance = undefined;
     if (this.textureOk) {
       try {
         Object.assign(measurements, this.texture(video, frame));
@@ -71,7 +77,13 @@ export class Tracker {
         this.textureOk = false;
       }
     }
-    return { landmarks, measurements };
+    let minY = 1;
+    let maxY = 0;
+    for (const p of landmarks) {
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+    return { landmarks, measurements, boxHeight: Math.max(0, maxY - minY), luminance: this.lastLuminance };
   }
 
   /** Forehead wrinkle / glabella furrow measurements from a small crop of the frame. */
@@ -97,7 +109,9 @@ export class Tracker {
     const rgba = ctx.getImageData(0, 0, w, h).data;
     if (this.texGray.length !== w * h) this.texGray = new Float32Array(w * h);
     const gray = this.texGray;
-    for (let i = 0, j = 0; i < gray.length; i++, j += 4) gray[i] = 0.299 * rgba[j] + 0.587 * rgba[j + 1] + 0.114 * rgba[j + 2];
+    let sum = 0;
+    for (let i = 0, j = 0; i < gray.length; i++, j += 4) sum += gray[i] = 0.299 * rgba[j] + 0.587 * rgba[j + 1] + 0.114 * rgba[j + 2];
+    this.lastLuminance = gray.length ? sum / gray.length : undefined;
     // Crop pixel (i, j) is frame pixel (x0 + i / scale, y0 + j / scale).
     return measureTexture(frame, bufferSampler(gray, w, h, x0, y0, scale));
   }
