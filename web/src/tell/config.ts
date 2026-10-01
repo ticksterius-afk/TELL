@@ -1,5 +1,5 @@
 /** Timings. `?fast=1` compresses the long waits so the end-to-end test runs in seconds. */
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
 export const FAST = params.get("fast") === "1";
 export const VERSION = "0.1.0";
 
