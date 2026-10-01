@@ -48,6 +48,14 @@ describe("Poker Face daily", () => {
     expect(prototypeAUs("surprise").AU26 ?? prototypeAUs("surprise").AU27 ?? prototypeAUs("surprise").AU5).toBeGreaterThan(0);
     expect(Object.keys(prototypeAUs("nope"))).toEqual([]);
   });
+
+  it("keeps every core action of a prototype at full strength even when a support slot lists it too", () => {
+    for (const e of model.expressions) {
+      const v = e.variants?.[0] ?? { slots: e.slots ?? [] };
+      const got = prototypeAUs(e.id);
+      for (const s of v.slots ?? []) for (const f of s.any.slice(0, 2)) expect(got[f.replace(/[LRUB]$/, "")], `${e.id} ${f}`).toBe(0.9);
+    }
+  });
 });
 
 describe("round scoring", () => {

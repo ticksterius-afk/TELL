@@ -1,7 +1,36 @@
 {
   "version": "0.1.0",
   "about": "TellScorer parameters for TELL. Every number here is a placeholder until M4 re-tunes it on recorded fixtures (model/fixtures/tell). Components compare a statement with the same person's talking baseline in the same session; nothing here claims to detect lies.",
-  "aus": ["AU1", "AU2", "AU2L", "AU2R", "AU2U", "AU4", "AU5", "AU6", "AU7", "AU9", "AU10", "AU12", "AU12L", "AU12R", "AU12U", "AU14", "AU14L", "AU14R", "AU14U", "AU15", "AU17", "AU20", "AU23", "AU24", "AU25", "AU26", "AU43", "STILL"],
+  "aus": [
+    "AU1",
+    "AU2",
+    "AU2L",
+    "AU2R",
+    "AU2U",
+    "AU4",
+    "AU5",
+    "AU6",
+    "AU7",
+    "AU9",
+    "AU10",
+    "AU12",
+    "AU12L",
+    "AU12R",
+    "AU12U",
+    "AU14",
+    "AU14L",
+    "AU14R",
+    "AU14U",
+    "AU15",
+    "AU17",
+    "AU20",
+    "AU23",
+    "AU24",
+    "AU25",
+    "AU26",
+    "AU43",
+    "STILL"
+  ],
   "baseline": {
     "grow": true,
     "minFrames": 30,
@@ -46,12 +75,25 @@
     "maxGapSec": 0.25
   },
   "pokerface": {
-    "channels": ["AU12", "AU6", "BROWS", "AU26", "AU9", "AU20"],
+    "channels": [
+      "AU12",
+      "AU6",
+      "BROWS",
+      "AU26",
+      "AU9",
+      "AU20"
+    ],
     "baselineSec": 5,
     "margin": 0.05,
     "scale": 8,
     "bins": 10,
     "binSec": 6,
-    "binLevels": [0.12, 0.5, 1.2]
+    "binLevels": [
+      0.12,
+      0.5,
+      1.2
+    ],
+    "minBaselineShare": 0.5,
+    "minFaceShare": 0.5
   }
 }

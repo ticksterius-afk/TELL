@@ -15,6 +15,8 @@ interface Streak { last: number; count: number; best: number }
 interface DayResult { straightFace: number; levels: number[]; playedAt: string }
 
 const CELLS = ["⬛", "🟨", "🟧", "🟥"];
+/** The live needle needs this many baseline frames before it compares anything. */
+const MIN_BASELINE_FRAMES = 5;
 
 export function shareCard(day: number, r: { straightFace: number; levels: number[] }, streak: number): string {
   return `TELL Poker Face #${day}  ${r.straightFace}/100 🔥 ${streak}\n${r.levels.map((l) => CELLS[l]).join("")}`;
@@ -144,7 +146,7 @@ export function pokerface(app: App): Screen {
       const frame = app.recorder.current!.frames[app.recorder.current!.frames.length - 1];
       if (elapsed < pf.baselineSec * 1000) {
         for (const c of pf.channels) base[c].push(channel(frame, c));
-      } else {
+      } else if (p90 || base[pf.channels[0]].length >= MIN_BASELINE_FRAMES) {
         p90 ??= Object.fromEntries(pf.channels.map((c) => [c, quantile(base[c].sort((a, b) => a - b), 0.9)]));
         let e = 0;
         for (const c of pf.channels) e = Math.max(e, channel(frame, c) - p90[c] - pf.margin);
@@ -159,12 +161,29 @@ export function pokerface(app: App): Screen {
     state = "done";
     const seg = app.recorder.end(t);
     result = scorePokerFace(seg.frames, pf, TELL_PARAMS.quality.maxGapSec);
+    rig.active = false;
+    if (result.unscored) {
+      // No face in the baseline or in most of the feed: nothing to compare with, so no score, no best, no streak.
+      el.replaceChildren(
+        h("div", { class: "screen pf-result" },
+          h("p", { class: "eyebrow" }, `Poker Face #${day}`),
+          h("h1", { class: "big", "data-testid": "pf-unscored" }, "No score this time"),
+          h("p", { class: "lede" }, result.unscored === "baseline"
+            ? `The phone couldn't see your face during the first ${pf.baselineSec} seconds, so there was nothing to compare with.`
+            : "Your face was out of view for too much of the minute to score it."),
+          h("div", { class: "actions" },
+            h("button", { class: "primary-btn", onclick: () => app.go("pokerface") }, "Try again"),
+            h("button", { class: "text-btn", onclick: () => { app.rig.stop(); app.go("home"); } }, "Home"),
+          ),
+        ),
+      );
+      return;
+    }
     const prev = played;
     const best = prev && prev.straightFace > result.straightFace ? prev : { straightFace: result.straightFace, levels: result.levels, playedAt: new Date().toISOString() };
     save(`tell.poker.${day}`, best);
     streak = bumpStreak(streak, day);
     save("tell.streak", streak);
-    rig.active = false;
     const card = shareCard(day, result, streak.count);
     const grid = h("div", { class: "pf-grid", "data-testid": "pf-grid" }, ...result.levels.map((l, i) => h("span", { class: `cell l${l}`, title: `${i * pf.binSec}–${(i + 1) * pf.binSec} s` }, CELLS[l])));
     el.replaceChildren(

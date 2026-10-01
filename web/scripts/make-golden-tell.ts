@@ -110,7 +110,7 @@ export function scoreFixture(fx: TellFixture, model: EmotionModel, params: TellP
   const pokerface = session.feeds.length
     ? session.feeds.map((f) => {
       const r = scorePokerFace(f.frames, params.pokerface, params.quality.maxGapSec);
-      return { id: f.id, straightFace: r.straightFace, leakage: r.leakage, integral: r6(r.integral), levels: r.levels, bins: r.bins.map(r6) };
+      return { id: f.id, straightFace: r.straightFace, leakage: r.leakage, integral: r6(r.integral), levels: r.levels, bins: r.bins.map(r6), unscored: r.unscored };
     })
     : [];
   return {

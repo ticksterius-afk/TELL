@@ -45,7 +45,11 @@ export interface TellParams {
   display: { curve: number; captionMin: number; maxCaptions: number };
   intensity: { leak: number; asym: number; brow: number; tauMs: number; microStep: number; microDecayMs: number; peakWindowSec: number; peakMin: number };
   quality: { minFaceSec: number; minMean: number; maxGapSec: number };
-  pokerface: { channels: string[]; baselineSec: number; margin: number; scale: number; bins: number; binSec: number; binLevels: [number, number, number] };
+  pokerface: {
+    channels: string[]; baselineSec: number; margin: number; scale: number; bins: number; binSec: number; binLevels: [number, number, number];
+    /** Share of the baseline window, and of the whole feed, that must show a face for the result to count. */
+    minBaselineShare: number; minFaceShare: number;
+  };
 }
 
 /** Throws with a readable message when tell.json is malformed. Returns the typed params. */
@@ -77,7 +81,7 @@ export function validateTellParams(raw: unknown): TellParams {
   for (const k of ["minFaceSec", "minMean", "maxGapSec"] as const) num(p.quality?.[k], `quality.${k}`);
   const pf = p.pokerface;
   if (!pf || !Array.isArray(pf.channels) || pf.channels.length === 0) throw new Error("tell.json: pokerface.channels");
-  for (const k of ["baselineSec", "margin", "scale", "bins", "binSec"] as const) num(pf[k], `pokerface.${k}`);
+  for (const k of ["baselineSec", "margin", "scale", "bins", "binSec", "minBaselineShare", "minFaceShare"] as const) num(pf[k], `pokerface.${k}`);
   if (!Array.isArray(pf.binLevels) || pf.binLevels.length !== 3) throw new Error("tell.json: pokerface.binLevels must have 3 thresholds");
   for (let i = 0; i < 3; i++) num(pf.binLevels[i], `pokerface.binLevels[${i}]`);
   return p;
@@ -497,6 +501,15 @@ export interface PokerFaceResult {
   /** Per-frame excess 0–1, for a live needle. */
   excess: number[];
   baselineFrames: number;
+  /** Seconds of face seen in the baseline window and in the whole feed. */
+  baselineFaceSec: number;
+  faceSec: number;
+  /**
+   * Set when the numbers must not be shown or saved: the face was missing from
+   * the baseline (nothing to compare with; every channel would "leak" over a P90
+   * of 0) or from too much of the feed (hiding the face would score 100).
+   */
+  unscored?: "baseline" | "face";
 }
 
 /**
@@ -517,6 +530,15 @@ export function scorePokerFace(frames: RecordedFrame[], p: TellParams["pokerface
   const p90: Record<string, number> = {};
   for (const c of p.channels) p90[c] = quantile(base[c].sort((a, b) => a - b), 0.9);
   const w = frameWeights(frames, maxGapSec);
+  let baselineFaceSec = 0;
+  let faceSec = 0;
+  for (let i = 0; i < frames.length; i++) {
+    if (!frames[i].face) continue;
+    faceSec += w[i];
+    if (frames[i].t - t0 < p.baselineSec * 1000) baselineFaceSec += w[i];
+  }
+  const durationSec = frames.length ? (frames[frames.length - 1].t - t0) / 1000 : 0;
+  const unscored: PokerFaceResult["unscored"] = baselineFaceSec < p.baselineSec * p.minBaselineShare ? "baseline" : faceSec < durationSec * p.minFaceShare ? "face" : undefined;
   const bins = new Array<number>(p.bins).fill(0);
   const excess = new Array<number>(frames.length).fill(0);
   let integral = 0;
@@ -534,5 +556,7 @@ export function scorePokerFace(frames: RecordedFrame[], p: TellParams["pokerface
   }
   const levels = bins.map((v) => (v >= p.binLevels[2] ? 3 : v >= p.binLevels[1] ? 2 : v >= p.binLevels[0] ? 1 : 0));
   const leakage = Math.round(100 * Math.min(1, integral / p.scale));
-  return { straightFace: 100 - leakage, leakage, integral, bins, levels, excess, baselineFrames };
+  const r: PokerFaceResult = { straightFace: 100 - leakage, leakage, integral, bins, levels, excess, baselineFrames, baselineFaceSec, faceSec };
+  if (unscored) r.unscored = unscored;
+  return r;
 }

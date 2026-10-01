@@ -57,9 +57,10 @@ export class DevRecorder {
     const m = measurements ? Object.fromEntries(Object.entries(measurements).map(([k, v]) => [k, r4(v)])) : null;
     const f: DevFrame = { t: Math.round(tMs - this.t0), m };
     if (this.pending.length) {
-      // Several markers tapped between two frames: keep the last begin/end, join with a frame each.
+      // Several markers tapped between two frames: one frame each, in the order they were tapped,
+      // so an "end" tapped before "statement:2" closes the segment before the next one opens.
+      while (this.pending.length > 1) this.frames.push({ t: f.t, m: f.m, cmd: this.pending.shift() });
       f.cmd = this.pending.shift();
-      while (this.pending.length) this.frames.push({ t: f.t, m: f.m, cmd: this.pending.shift() });
     }
     this.frames.push(f);
   }

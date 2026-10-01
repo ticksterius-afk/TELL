@@ -15,8 +15,12 @@ export function prototypeAUs(id: string): Record<string, number> {
   const aus: Record<string, number> = {};
   if (!e) return aus;
   const variant = e.variants?.[0] ?? { slots: e.slots ?? [], support: e.support ?? [] };
-  for (const s of variant.slots ?? []) for (const f of s.any.slice(0, 2)) aus[f.replace(/[LRUB]$/, "")] = Math.max(aus[f] ?? 0, 0.9);
-  for (const s of variant.support ?? []) for (const f of s.any.slice(0, 1)) aus[f.replace(/[LRUB]$/, "")] = Math.max(aus[f] ?? 0, 0.6);
+  const bump = (f: string, v: number) => {
+    const k = f.replace(/[LRUB]$/, "");
+    aus[k] = Math.max(aus[k] ?? 0, v);
+  };
+  for (const s of variant.slots ?? []) for (const f of s.any.slice(0, 2)) bump(f, 0.9);
+  for (const s of variant.support ?? []) for (const f of s.any.slice(0, 1)) bump(f, 0.6);
   return aus;
 }
 

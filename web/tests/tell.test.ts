@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { EmotionEngine } from "../src/engine/index.ts";
 import { DEFAULT_TELL_AUS, SessionRecorder } from "../src/engine/recorder.ts";
 import { COMPONENT_IDS, COMPONENT_NAMES, TellScorer, scorePokerFace, validateTellParams } from "../src/engine/tell.ts";
+import { DevRecorder } from "../src/app/devrecorder.ts";
 import { estimateQuality } from "../src/app/quality.ts";
 import { FORBIDDEN_WORDS, findForbidden } from "./tell-words.ts";
 import { arkitFace, model, PROTOTYPES } from "./helpers.ts";
@@ -263,6 +264,34 @@ describe("Poker Face scoring", () => {
     expect(b.levels[0]).toBe(0);
     expect(b.levels[9]).toBe(0);
     expect(Math.max(...b.excess)).toBeGreaterThan(0.4);
+    expect(a.unscored).toBeUndefined();
+    expect(b.unscored).toBeUndefined();
+  });
+
+  it("is unscored when the face is missing from the baseline or from most of the feed", () => {
+    const noBaseline = synthSegment("feed", "feed", 0, 60, { seed: 2, faceLost: [[0, 4]] });
+    expect(scorePokerFace(noBaseline.frames, tellParams.pokerface).unscored).toBe("baseline");
+    const hidden = synthSegment("feed", "feed", 0, 60, { seed: 2, faceLost: [[8, 60]] });
+    const h = scorePokerFace(hidden.frames, tellParams.pokerface);
+    expect(h.unscored).toBe("face");
+    expect(h.faceSec).toBeLessThan(10);
+    expect(scorePokerFace([], tellParams.pokerface).unscored).toBe("baseline");
+    // A short gap is fine.
+    const blip = synthSegment("feed", "feed", 0, 60, { seed: 2, faceLost: [[20, 22]] });
+    expect(scorePokerFace(blip.frames, tellParams.pokerface).unscored).toBeUndefined();
+  });
+});
+
+describe("developer recorder", () => {
+  it("keeps markers tapped between two frames in the order they were tapped", () => {
+    const r = new DevRecorder();
+    r.push(1000, { a: 1 });
+    r.mark("end");
+    r.nextStatement();
+    r.push(1033, { a: 1 });
+    r.push(1066, null);
+    expect(r.toJSON("x").frames.map((f) => [f.t, f.cmd])).toEqual([[0, undefined], [33, "end"], [33, "statement:1"], [66, undefined]]);
+    expect(r.frameCount).toBe(4);
   });
 });
 
