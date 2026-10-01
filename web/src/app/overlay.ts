@@ -75,8 +75,6 @@ export class Overlay {
   ): void {
     this.clear();
     if (!landmarks || mode === "off" || !video.videoWidth) return;
-    const ctx = this.ctx;
-    const dpr = window.devicePixelRatio || 1;
     const cw = this.canvas.width;
     const ch = this.canvas.height;
     const s = Math.max(cw / video.videoWidth, ch / video.videoHeight);
@@ -84,83 +82,7 @@ export class Overlay {
     const oy = (ch - video.videoHeight * s) / 2;
     const X = (i: number) => ox + landmarks[i].x * video.videoWidth * s;
     const Y = (i: number) => oy + landmarks[i].y * video.videoHeight * s;
-
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    const stroke = (conns: Conn[], color: string, width: number) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width * dpr;
-      ctx.beginPath();
-      for (const c of conns) {
-        ctx.moveTo(X(c.start), Y(c.start));
-        ctx.lineTo(X(c.end), Y(c.end));
-      }
-      ctx.stroke();
-    };
-
-    stroke(OVAL, "rgba(255,255,255,0.18)", 1);
-    stroke(IRIS, "rgba(255,255,255,0.35)", 1);
-    const forehead = regions.forehead ?? 0;
-    for (const { region, conns } of CONTOURS) {
-      // The brows move with both the forehead (raise) and the glabella (lower).
-      const v = region === "brows" ? Math.max(forehead, regions.brows ?? 0) : regions[region] ?? 0;
-      stroke(conns, heat(v), 1.4 + 2.2 * v);
-    }
-
-    const mix = (a: number, b: number, t: number): [number, number] => [X(a) + (X(b) - X(a)) * t, Y(a) + (Y(b) - Y(a)) * t];
-    const polyline = (pts: [number, number][], color: string, width: number) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width * dpr;
-      ctx.beginPath();
-      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.stroke();
-    };
-    // Forehead lines: drawn inset from the temples, so they read as wrinkles rather than a grid.
-    const inset = (row: [number, number][]) => row.slice(1, -1);
-    const rows = [
-      FOREHEAD_MID.map((m, i) => mix(BROW_TOP[i], m, 0.5)),
-      FOREHEAD_MID.map((m): [number, number] => [X(m), Y(m)]),
-      FOREHEAD_MID.map((m, i) => mix(m, FOREHEAD_TOP[i], 0.5)),
-    ];
-    for (const row of rows) polyline(inset(row), heat(forehead, 0.8), 1 + 2 * forehead);
-    const glabella = regions.brows ?? 0;
-    if (glabella >= 0.08) {
-      for (const [lower, upper] of GLABELLA) {
-        // Pull each furrow halfway from the brow head towards the midline (8 below, 9 above).
-        const a = mix(lower, 8, 0.5);
-        const b = mix(upper, 9, 0.5);
-        polyline([a, b], heat(glabella), 1.2 + 2.2 * glabella);
-      }
-    }
-    const cheek = regions.cheeks ?? 0;
-    ctx.fillStyle = heat(cheek);
-    for (const i of CHEEK_POINTS) {
-      ctx.beginPath();
-      ctx.arc(X(i), Y(i), (1.6 + 2.5 * cheek) * dpr, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (mode === "labels") {
-      ctx.font = `${600} ${11 * dpr}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-      ctx.textBaseline = "middle";
-      for (const { at, aus: ids } of LABELS) {
-        const active = ids.filter((id) => (aus[id] ?? 0) >= 0.25).slice(0, 3);
-        if (!active.length) continue;
-        const text = active.map((id) => `${id} ${Math.round((aus[id] ?? 0) * 100)}`).join("  ");
-        const x = X(at) + 14 * dpr;
-        const y = Y(at);
-        ctx.save();
-        ctx.translate(x, y);
-        if (mirrored) ctx.scale(-1, 1);
-        const w = ctx.measureText(text).width;
-        const tx = mirrored ? -w : 0;
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(tx - 4 * dpr, -8 * dpr, w + 8 * dpr, 16 * dpr);
-        ctx.fillStyle = "#fff";
-        ctx.fillText(text, tx, 0);
-        ctx.restore();
-      }
-    }
+    drawFaceMesh(this.ctx, X, Y, regions, aus, mode, mirrored, window.devicePixelRatio || 1);
   }
 
   private fit(): void {
@@ -170,6 +92,100 @@ export class Overlay {
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
+    }
+  }
+}
+
+/**
+ * Draws the face mesh (oval, irises, region contours coloured by activity,
+ * forehead lines, glabella furrows, cheek points, optional AU labels) with
+ * X(i)/Y(i) giving landmark i in canvas pixels. Shared by the live overlay and
+ * TELL's replay canvas.
+ */
+export function drawFaceMesh(
+  ctx: CanvasRenderingContext2D,
+  X: (i: number) => number,
+  Y: (i: number) => number,
+  regions: Record<string, number>,
+  aus: Record<string, number>,
+  mode: "regions" | "labels",
+  mirrored: boolean,
+  dpr: number,
+): void {
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const stroke = (conns: Conn[], color: string, width: number) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * dpr;
+    ctx.beginPath();
+    for (const c of conns) {
+      ctx.moveTo(X(c.start), Y(c.start));
+      ctx.lineTo(X(c.end), Y(c.end));
+    }
+    ctx.stroke();
+  };
+
+  stroke(OVAL, "rgba(255,255,255,0.18)", 1);
+  stroke(IRIS, "rgba(255,255,255,0.35)", 1);
+  const forehead = regions.forehead ?? 0;
+  for (const { region, conns } of CONTOURS) {
+    // The brows move with both the forehead (raise) and the glabella (lower).
+    const v = region === "brows" ? Math.max(forehead, regions.brows ?? 0) : regions[region] ?? 0;
+    stroke(conns, heat(v), 1.4 + 2.2 * v);
+  }
+
+  const mix = (a: number, b: number, t: number): [number, number] => [X(a) + (X(b) - X(a)) * t, Y(a) + (Y(b) - Y(a)) * t];
+  const polyline = (pts: [number, number][], color: string, width: number) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * dpr;
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+  };
+  // Forehead lines: drawn inset from the temples, so they read as wrinkles rather than a grid.
+  const inset = (row: [number, number][]) => row.slice(1, -1);
+  const rows = [
+    FOREHEAD_MID.map((m, i) => mix(BROW_TOP[i], m, 0.5)),
+    FOREHEAD_MID.map((m): [number, number] => [X(m), Y(m)]),
+    FOREHEAD_MID.map((m, i) => mix(m, FOREHEAD_TOP[i], 0.5)),
+  ];
+  for (const row of rows) polyline(inset(row), heat(forehead, 0.8), 1 + 2 * forehead);
+  const glabella = regions.brows ?? 0;
+  if (glabella >= 0.08) {
+    for (const [lower, upper] of GLABELLA) {
+      // Pull each furrow halfway from the brow head towards the midline (8 below, 9 above).
+      const a = mix(lower, 8, 0.5);
+      const b = mix(upper, 9, 0.5);
+      polyline([a, b], heat(glabella), 1.2 + 2.2 * glabella);
+    }
+  }
+  const cheek = regions.cheeks ?? 0;
+  ctx.fillStyle = heat(cheek);
+  for (const i of CHEEK_POINTS) {
+    ctx.beginPath();
+    ctx.arc(X(i), Y(i), (1.6 + 2.5 * cheek) * dpr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (mode === "labels") {
+    ctx.font = `${600} ${11 * dpr}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.textBaseline = "middle";
+    for (const { at, aus: ids } of LABELS) {
+      const active = ids.filter((id) => (aus[id] ?? 0) >= 0.25).slice(0, 3);
+      if (!active.length) continue;
+      const text = active.map((id) => `${id} ${Math.round((aus[id] ?? 0) * 100)}`).join("  ");
+      const x = X(at) + 14 * dpr;
+      const y = Y(at);
+      ctx.save();
+      ctx.translate(x, y);
+      if (mirrored) ctx.scale(-1, 1);
+      const w = ctx.measureText(text).width;
+      const tx = mirrored ? -w : 0;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(tx - 4 * dpr, -8 * dpr, w + 8 * dpr, 16 * dpr);
+      ctx.fillStyle = "#fff";
+      ctx.fillText(text, tx, 0);
+      ctx.restore();
     }
   }
 }

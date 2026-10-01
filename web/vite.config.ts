@@ -29,6 +29,11 @@ export default defineConfig(({ mode }) => ({
   base: "./",
   plugins: [mediapipeAssets(), ...(mode === "https" ? [basicSsl()] : [])],
   server: { fs: { allow: [here("..")] } },
-  build: { target: "es2022", assetsInlineLimit: 0 },
+  build: {
+    target: "es2022",
+    assetsInlineLimit: 0,
+    // Two entry points: the Mien instrument (index.html) and the TELL party game (tell.html).
+    rollupOptions: { input: { main: here("index.html"), tell: here("tell.html") } },
+  },
   test: { include: ["tests/**/*.test.ts"], environment: "node" },
 }));

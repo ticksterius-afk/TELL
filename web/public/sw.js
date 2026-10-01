@@ -4,8 +4,8 @@
  * - everything else same-origin: stale-while-revalidate
  * HEAD requests (used to probe for the self-hosted model) are answered from the cache when possible.
  */
-const CACHE = "mien-v1";
-const PRECACHE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg", "./icons/apple-touch-icon.png"];
+const CACHE = "mien-v2";
+const PRECACHE = ["./", "./index.html", "./tell.html", "./manifest.webmanifest", "./tell.webmanifest", "./icons/icon.svg", "./icons/apple-touch-icon.png", "./icons/tell.svg"];
 const MODEL_CDN = "storage.googleapis.com";
 
 self.addEventListener("install", (event) => {
@@ -57,7 +57,8 @@ async function networkFirst(req) {
     if (res.ok) cache.put(req, res.clone());
     return res;
   } catch {
-    return (await cache.match(req)) || (await cache.match("./index.html")) || Response.error();
+    const fallback = new URL(req.url).pathname.endsWith("/tell.html") ? "./tell.html" : "./index.html";
+    return (await cache.match(req)) || (await cache.match(fallback)) || Response.error();
   }
 }
 

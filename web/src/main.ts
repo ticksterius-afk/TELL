@@ -3,15 +3,14 @@ import { CameraError, openCamera, openFile, type Facing } from "./app/camera.ts"
 import { defaultRecordingName, DevRecorder, saveRecording } from "./app/devrecorder.ts";
 import { MODEL } from "./app/model.ts";
 import { Overlay } from "./app/overlay.ts";
-import { DEFAULT_SETTINGS, load, loadRaw, remove, save, type Settings } from "./app/storage.ts";
+import { forgetCalibration, restoreCalibration, saveCalibration, saveGains, setRing } from "./app/calibration.ts";
+import { DEFAULT_SETTINGS, load, save, type Settings } from "./app/storage.ts";
 import { Tracker } from "./app/tracker.ts";
 import { UI } from "./app/ui.ts";
 import { EmotionEngine, type FrameResult } from "./engine/index.ts";
 import type { Landmark } from "./platform/mediapipe/geometry.ts";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
-const CALIBRATION_KEY = "calibration.mediapipe";
-const GAINS_KEY = "gains.mediapipe";
 const UI_INTERVAL_MS = 80;
 
 const video = $<HTMLVideoElement>("#video");
@@ -34,10 +33,7 @@ let lastLandmarks: Landmark[] | null = null;
 let wakeLock: { release(): Promise<void> } | null = null;
 
 // Restore a previous calibration for this device.
-const saved = loadRaw<Record<string, number>>(CALIBRATION_KEY);
-if (saved) engine.baseline.setCalibration(saved);
-const savedGains = loadRaw<Record<string, number>>(GAINS_KEY);
-if (savedGains) engine.baseline.setGains(savedGains);
+restoreCalibration(engine);
 
 // ------------------------------------------------------------------ start
 $("#btn-start").addEventListener("click", () => start("camera"));
@@ -118,10 +114,7 @@ $("#btn-recalibrate").addEventListener("click", () => {
   $("#calib").hidden = false;
 });
 $("#btn-forget").addEventListener("click", () => {
-  engine.baseline.reset();
-  engine.baseline.resetGains();
-  remove(CALIBRATION_KEY);
-  remove(GAINS_KEY);
+  forgetCalibration(engine);
   toast("Calibration forgotten — the baseline will be learned from scratch.");
   setStatus();
 });
@@ -144,7 +137,7 @@ function beginCalibration(): void {
 function handleCalibration(out: FrameResult): void {
   if (!calibrating) return;
   const arc = document.getElementById("calib-arc");
-  if (arc) arc.style.strokeDashoffset = String(276.46 * (1 - out.calibration.progress));
+  setRing(arc, out.calibration.progress);
   if (!out.calibration.result) return;
   calibrating = false;
   $("#calib").hidden = true;
@@ -152,10 +145,9 @@ function handleCalibration(out: FrameResult): void {
   $("#btn-calib-skip").hidden = false;
   $("#calib-title").textContent = "Calibrate your neutral face";
   $("#calib-text").innerHTML = "Everyone's resting face is different. Look at the screen with a relaxed, neutral expression for three seconds so expressions are measured from <em>your</em> baseline.";
-  if (arc) arc.style.strokeDashoffset = "276.46";
+  setRing(arc, 0);
   if (out.calibration.result === "done") {
-    const cal = engine.baseline.getCalibration();
-    if (cal) save(CALIBRATION_KEY, cal);
+    saveCalibration(engine);
     toast("Calibrated to your neutral face.");
     if (!Object.keys(engine.baseline.getGains()).length) showRangeIntro();
   } else {
@@ -202,7 +194,7 @@ function startRangeStep(): void {
 function handleRange(out: FrameResult): void {
   if (rangeIndex < 0 || !out.range.step) return;
   const arc = document.getElementById("range-arc");
-  if (arc) arc.style.strokeDashoffset = String(276.46 * (1 - out.range.progress));
+  setRing(arc, out.range.progress);
   if (!out.range.result) return;
   if (out.range.result === "done") {
     rangeUpdated += out.range.updated?.length ?? 0;
@@ -216,12 +208,11 @@ function handleRange(out: FrameResult): void {
 function finishRange(completed: boolean): void {
   engine.baseline.cancelRangeStep();
   $("#range").hidden = true;
-  const arc = document.getElementById("range-arc");
-  if (arc) arc.style.strokeDashoffset = "276.46";
+  setRing(document.getElementById("range-arc"), 0);
   const wasRunning = rangeIndex >= 0;
   rangeIndex = -1;
   if (!wasRunning) return;
-  save(GAINS_KEY, engine.baseline.getGains());
+  saveGains(engine);
   if (completed) {
     toast(rangeWeak.length
       ? `Range calibrated (${rangeUpdated} signals). Little movement seen for: ${rangeWeak.join("; ")}.`

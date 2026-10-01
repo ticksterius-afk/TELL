@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d12" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TELL" />
+    <meta name="description" content="TELL — the poker-face party game. Say three things, one false; the phone measures how much your face moved away from your own baseline. It can't catch lies. Nobody can. It catches tells. Everything stays on this phone." />
+    <link rel="manifest" href="./tell.webmanifest" />
+    <link rel="icon" href="./icons/tell.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <title>TELL — the poker-face party game</title>
+  </head>
+  <body class="tell">
+    <div id="tell">
+      <section id="stage" aria-label="Camera" hidden>
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay"></canvas>
+        <div id="rec" class="rec" role="status"><span class="rec-dot" aria-hidden="true"></span><span>Analysing on this phone</span></div>
+        <div id="badge" class="badge" role="status" hidden></div>
+      </section>
+      <main id="screen" aria-live="polite"></main>
+      <div id="toast" class="toast" role="status" hidden></div>
+    </div>
+    <script type="module" src="./src/tell/main.ts"></script>
+  </body>
+</html>
