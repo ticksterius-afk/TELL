@@ -1,5 +1,11 @@
 # Mien — real-time facial expression reader
 
+> **Private repository: home of TELL.** This is a copy of the public
+> [facial-expression](https://github.com/ticksterius-afk/facial-expression) project plus the
+> TELL party game being built on it. Start with [`CLAUDE.md`](CLAUDE.md),
+> [`docs/tell/SPEC.md`](docs/tell/SPEC.md) and [`docs/tell/HANDOFF.md`](docs/tell/HANDOFF.md).
+> Product research and the other concepts: [`docs/CONCEPTS.md`](docs/CONCEPTS.md).
+
 Mien watches a face through the camera and names what it is expressing, in real
 time. It covers:
 
@@ -105,6 +111,8 @@ ios/Mien/                    SwiftUI + ARKit app;  ios/project.yml → Xcode pro
 docs/RESEARCH.md             which facial movements portray which emotions — the science, with references
 docs/ARCHITECTURE.md         pipeline and maths
 docs/VALIDATION.md           how it was tested on real faces, and known weaknesses
+docs/CONCEPTS.md             product research and concepts (education, TELL, game)
+docs/tell/                   TELL specification, handoff and research notes
 ```
 
 ## How it works (one paragraph)
